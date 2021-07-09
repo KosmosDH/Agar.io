@@ -72,6 +72,7 @@ class OurGame(arcade.Window):
         SCREEN_WIDTH, SCREEN_HEIGHT = screen_width, screen_height
         self.game = True
         self.exit = False
+        self.text = ""
 
     # начальные значения
     def setup(self):
@@ -87,39 +88,50 @@ class OurGame(arcade.Window):
         arcade.start_render()
         self.circles.draw()
         self.player.draw()
-        if not self.game:
-            arcade.draw_text("PAUSE", SCREEN_HEIGHT // 2, SCREEN_WIDTH // 2, arcade.color.WHITE, 20)
+        arcade.draw_text("Pause: Space", self.width - 100, self.height - 50, arcade.color.WHITE)
+        arcade.draw_text("Exit: Esc", 50, self.height - 50, arcade.color.WHITE)
+        text_len = len(self.text)
+        arcade.draw_text(self.text, self.width // 2 - text_len / 2 * 50, self.height // 2, arcade.color.WHITE, 80)
 
     # логика
     def update(self, delta_time):
-        if self.game:
+        if self.game and not self.exit:
+            self.set_mouse_visible(False)
             self.circles.update()
             self.player.update()
             collisions = arcade.check_for_collision_with_list(self.player, self.circles)
             if len(collisions) > 0:
                 for circle in collisions:
                     if circle.scale > self.player.scale:
-                        exit()
+                        self.exit = True
+                        self.text = "You lose"
                     else:
                         circle.kill()
                         self.player.scale += 0.01
                         if self.player.scale >= 2:
-                            exit()
+                            self.exit = True
+                            self.text = "You win"
             if self.sound.get_stream_position(self.music) == 0:
                 self.music = arcade.play_sound(self.sound, volume= 0.5)
             while len(self.circles) < 30:
                 circle = Circle(random.uniform(0.1, self.player.scale + 0.5))
                 self.circles.append(circle)
-            if self.exit:
-                exit()
+        if self.exit:
+            self.player.kill()
+            for circle in self.circles:
+                circle.kill()
 
     def on_key_press(self, symbol: int, modifiers: int):
         if symbol == arcade.key.SPACE:
-            self.game = False
-        if symbol == arcade.key.LSHIFT:
-            self.game = True
-        if symbol == arcade.key.ESCAPE and self.game:
-            self.exit = True
+            if not self.game:
+                self.game = True
+                self.text = ""
+            else:
+                self.game = False
+                self.set_mouse_visible(True)
+                self.text = "Pause"
+        if symbol == arcade.key.ESCAPE:
+            window.close()
 
     def on_mouse_motion(self, x: float, y: float, dx: float, dy: float):
         if self.game:
@@ -130,4 +142,3 @@ class OurGame(arcade.Window):
 window = OurGame(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
 window.setup()
 arcade.run()
-# TODO сделать паузу
